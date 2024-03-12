@@ -787,10 +787,22 @@ std::vector<std::pair<INPUT, INPUT>> Utility::RecordKeyboardInput(bool recordMou
 					DEBUG_INFO("Grabación detenida.");
 					return recordedInputs;
 				}
-				else if (i == VK_SHIFT) shiftPressed = true;
-				else if (i == VK_CONTROL) controlPressed = true;
-				else if (i == VK_MENU) altPressed = true;
-				else if (i == VK_TAB) tabPressed = true;
+				else if (i == VK_SHIFT) {
+					DEBUG_SPAM("Detectado Shift press");
+					shiftPressed = true;
+				}
+				else if (i == VK_CONTROL) {
+					DEBUG_SPAM("Detectado Control press");
+					controlPressed = true;
+				}
+				else if (i == VK_MENU) {
+					DEBUG_SPAM("Detectado Menu press");
+					altPressed = true;
+				}
+				else if (i == VK_TAB) {
+					DEBUG_SPAM("Detectado Tab press");
+					tabPressed = true;
+				}
 				INPUT input;
 				input.type = INPUT_KEYBOARD;
 				input.ki.wScan = 0;
@@ -801,10 +813,12 @@ std::vector<std::pair<INPUT, INPUT>> Utility::RecordKeyboardInput(bool recordMou
 				input.ki.wVk = i;
 				input.ki.dwFlags = 0;
 				if (i == VK_LBUTTON && isRecordedMouseMovement) {
+					DEBUG_SPAM("Left Key Pressed.");
 					recordedInputs.push_back(std::make_pair(mouseInput, input));
 					leftClickPressed = true;
 				}
 				else if(i == VK_RBUTTON && isRecordedMouseMovement){
+					DEBUG_SPAM("Right Key Pressed.");
 					recordedInputs.push_back(std::make_pair(mouseInput, input));
 					rightClickPressed = true;
 				}
@@ -815,10 +829,22 @@ std::vector<std::pair<INPUT, INPUT>> Utility::RecordKeyboardInput(bool recordMou
 			else if (GetAsyncKeyState(i) == 0) {
 				//if ((i == VK_SHIFT && shiftPressed) || (i == VK_CONTROL && controlPressed) && (i == VK_MENU && altPressed) && (i == VK_TAB && tabPressed)) {
 				if ((i == VK_SHIFT && shiftPressed) || (i == VK_CONTROL && controlPressed) || (i == VK_MENU && altPressed) || (i == VK_TAB && tabPressed)) {
-					if (i == VK_SHIFT && shiftPressed) shiftPressed = false;
-					if (i == VK_CONTROL && controlPressed) controlPressed = false;
-					if (i == VK_MENU && altPressed) altPressed = false;
-					if (i == VK_TAB && tabPressed) tabPressed = false;
+					if (i == VK_SHIFT && shiftPressed) {
+						DEBUG_SPAM("Detectado Shift release");
+						shiftPressed = false;
+					}
+					if (i == VK_CONTROL && controlPressed) { 
+						DEBUG_SPAM("Detectado Control release");
+						controlPressed = false;
+					}
+					if (i == VK_MENU && altPressed) {
+						DEBUG_SPAM("Detectado Menu release");
+						altPressed = false;
+					}
+					if (i == VK_TAB && tabPressed) {
+						DEBUG_SPAM("Detectado Tab release");
+						tabPressed = false;
+					}
 					INPUT input;
 					input.type = INPUT_KEYBOARD;
 					input.ki.wScan = 0;
@@ -833,6 +859,7 @@ std::vector<std::pair<INPUT, INPUT>> Utility::RecordKeyboardInput(bool recordMou
 				else if (((i == VK_LBUTTON && leftClickPressed) || (i == VK_RBUTTON && rightClickPressed)) && isRecordedMouseMovement) {
 					if (i == VK_LBUTTON && leftClickPressed) leftClickPressed = false;
 					if (i == VK_RBUTTON && rightClickPressed) rightClickPressed = false;
+					DEBUG_SPAM("Left/Right Key Released.");
 					INPUT input;
 					input.type = INPUT_KEYBOARD;
 					input.ki.wScan = 0;
@@ -854,12 +881,14 @@ std::vector<std::pair<INPUT, INPUT>> Utility::RecordKeyboardInput(bool recordMou
 }
 
 void Utility::PlaybackKeyboardInput(const std::vector<std::pair<INPUT, INPUT>> data, long long timesToRepeat, long long timeToUpKeyMS, WORD endKey) {
-	do {
-		DEBUG_INFO("Reproduciendo grabación de teclado.");
-		std::chrono::time_point<std::chrono::steady_clock> startTime = std::chrono::steady_clock::now();
-		for (auto& inputPair : (data.empty()? recordedInputs : data)) {
-			auto mouse = inputPair.first;
-			auto input = inputPair.second;
+	std::chrono::time_point<std::chrono::steady_clock> startTime = std::chrono::steady_clock::now();
+	// Repetición de reproducción según timesToRepeat
+	while (timesToRepeat != 0) {
+		for (const auto& pair : data) {
+			const INPUT& mouseInput = pair.first;
+			const INPUT& keyboardInput = pair.second;
+
+			// Si se detecta el final de la reproducción
 			for (int i = 0; i < MAX_KEY_LENGTH; i++) {
 				if (GetAsyncKeyState(i) == -32767) {
 					if (i == endKey) {
@@ -868,62 +897,72 @@ void Utility::PlaybackKeyboardInput(const std::vector<std::pair<INPUT, INPUT>> d
 					}
 				}
 			}
+
 			if (isRecordedMouseMovement) {
 				POINT cursorPos;
-				GetCursorPos(&cursorPos);
-				if (mouse.mi.dx != cursorPos.x || mouse.mi.dy != cursorPos.y) {
-					SetCursorPos(mouse.mi.dx, mouse.mi.dy);
-				}
+				SetCursorPos(mouseInput.mi.dx, mouseInput.mi.dy);
+				//Sleep(10);
 			}
-			if (input.type == INPUT_KEYBOARD) {
-				switch (input.ki.wVk) {
+			if (keyboardInput.type == INPUT_KEYBOARD) {
+				switch (keyboardInput.ki.wVk) {
 				case VK_LBUTTON:
-					if (input.ki.dwFlags == 0 && isRecordedMouseMovement) {
+					if (keyboardInput.ki.dwFlags == 0 && isRecordedMouseMovement) {
 						mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
 						DEBUG_SPAM("MOUSEEVENTF_LEFTDOWN");
 					}
-					else if (input.ki.dwFlags == KEYEVENTF_KEYUP && isRecordedMouseMovement) {
+					else if (keyboardInput.ki.dwFlags == KEYEVENTF_KEYUP && isRecordedMouseMovement) {
 						mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
 						DEBUG_SPAM("MOUSEEVENTF_LEFTUP");
 					}
 					break;
 				case VK_RBUTTON:
-					if (input.ki.dwFlags == 0 && isRecordedMouseMovement) {
+					if (keyboardInput.ki.dwFlags == 0 && isRecordedMouseMovement) {
 						mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
 						DEBUG_SPAM("MOUSEEVENTF_RIGHTDOWN");
 					}
-					else if (input.ki.dwFlags == KEYEVENTF_KEYUP && isRecordedMouseMovement) {
+					else if (keyboardInput.ki.dwFlags == KEYEVENTF_KEYUP && isRecordedMouseMovement) {
 						mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
 						DEBUG_SPAM("MOUSEEVENTF_RIGHTUP");
 					}
 					break;
 				default:
-					std::chrono::duration<double> elapsedTime = std::chrono::steady_clock::now() - startTime;
-					std::chrono::milliseconds sleepTime((int)(input.ki.time - elapsedTime.count() * 1000));
-					std::this_thread::sleep_for(sleepTime);
-					SendInput(1, &input, sizeof(INPUT));
-					if (!(input.ki.dwFlags & KEYEVENTF_KEYUP) && (timeToUpKeyMS > 0 || input.ki.wVk == VK_CAPITAL || input.ki.wVk == VK_NUMLOCK)) {
-						if (timeToUpKeyMS > 0) std::this_thread::sleep_for(std::chrono::milliseconds(timeToUpKeyMS));
-						INPUT upKey;
-						upKey.type = INPUT_KEYBOARD;
-						upKey.ki.wScan = 0;
-						upKey.ki.dwExtraInfo = 0;
-						upKey.ki.time = input.ki.time;
-						upKey.ki.wVk = input.ki.wVk;
-						upKey.ki.dwFlags = KEYEVENTF_KEYUP;
-						SendInput(1, &upKey, sizeof(INPUT));
+					//std::chrono::duration<double> elapsedTime = std::chrono::steady_clock::now() - startTime;
+					//std::chrono::milliseconds sleepTime((int)(keyboardInput.ki.time - elapsedTime.count() * 1000));
+					//std::this_thread::sleep_for(sleepTime);
+					keybd_event(keyboardInput.ki.wVk, keyboardInput.ki.wScan, keyboardInput.ki.dwFlags, keyboardInput.ki.dwExtraInfo);
+					if (keyboardInput.ki.dwFlags == 0) {
+						if ((keyboardInput.ki.wVk == VK_SHIFT) || (keyboardInput.ki.wVk == VK_CONTROL) || (keyboardInput.ki.wVk == VK_MENU) || (keyboardInput.ki.wVk == VK_TAB)) {
+							DEBUG_SPAM("Recording - Special Key Pressed.");
+						}
+					}
+					else if (keyboardInput.ki.dwFlags == KEYEVENTF_KEYUP) {
+						if ((keyboardInput.ki.wVk == VK_SHIFT) || (keyboardInput.ki.wVk == VK_CONTROL) || (keyboardInput.ki.wVk == VK_MENU) || (keyboardInput.ki.wVk == VK_TAB)) {
+							DEBUG_SPAM("Recording - Special Key Released.");
+						}
+					}
+					// Si se especificó un tiempo para soltar la tecla, esperar ese tiempo
+					/*if (timeToUpKeyMS > 0)
+						Sleep(timeToUpKeyMS);
+					keybd_event(keyboardInput.ki.wVk, 0, KEYEVENTF_KEYUP, 0);*/
+					//if (!(keyboardInput.ki.dwFlags & KEYEVENTF_KEYUP) && (timeToUpKeyMS > 0 || keyboardInput.ki.wVk == VK_CAPITAL || keyboardInput.ki.wVk == VK_NUMLOCK)) {
+					if (!(keyboardInput.ki.dwFlags & KEYEVENTF_KEYUP) && (timeToUpKeyMS > 0 || keyboardInput.ki.wVk == VK_CAPITAL || keyboardInput.ki.wVk == VK_NUMLOCK)) {
+						if (timeToUpKeyMS > 0) Sleep(timeToUpKeyMS);
+						keybd_event(keyboardInput.ki.wVk, 0, KEYEVENTF_KEYUP, 0);
 					}
 					break;
 				}
 			}
-			else if (input.type == INPUT_MOUSE && isRecordedMouseMovement) {
-				std::chrono::duration<double> elapsedTime = std::chrono::steady_clock::now() - startTime;
-				std::chrono::milliseconds sleepTime((int)(input.mi.time - elapsedTime.count() * 1000));
-				std::this_thread::sleep_for(sleepTime);
+			else if (keyboardInput.type == INPUT_MOUSE && isRecordedMouseMovement) {
+				//std::chrono::duration<double> elapsedTime = std::chrono::steady_clock::now() - startTime;
+				//std::chrono::milliseconds sleepTime((int)(keyboardInput.mi.time - elapsedTime.count() * 1000));
+				//std::this_thread::sleep_for(sleepTime);
 			}
 		}
-		if (timesToRepeat > 0) timesToRepeat--;
-	} while (timesToRepeat < 0 || timesToRepeat > 0);
+
+		// Reducir contador de repeticiones, si es negativo, repetir infinitamente
+		if (timesToRepeat > 0)
+			timesToRepeat--;
+	}
 }
 
 #endif
