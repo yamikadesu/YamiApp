@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="YamiAPI.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="YamiApp.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="YamiAPI.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{c1a9ff3f-4a40-4edd-aed5-b35114005d4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code">
+      <UniqueIdentifier>{d1e084bc-3280-4bd7-b8b9-ee49624d402d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
